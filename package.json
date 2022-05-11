@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/kouriimei/285-reversi-othello#readme",
   "dependencies": {
+    "active-win": "^7.7.2",
     "node-static": "^0.7.11",
     "socket.io": "^4.5.0"
   }
