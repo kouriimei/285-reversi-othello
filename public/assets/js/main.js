@@ -94,7 +94,7 @@ socket.on('invite_response', (payload) =>{
 	}
 	let newNode = makeInvitedButton(payload.socket_id);
 	$('.socket_' + payload.socket_id + ' button').replaceWith(newNode);
-})
+})	
 
 
 socket.on('invited', (payload) =>{
@@ -186,7 +186,7 @@ socket.on('join_room_response', (payload) =>{
 	nodeA.show("fade", 1000);
 
 
-	let newHTML = '<p class=\'join_room_response\'>' + payload.username + ' joined the ' + payload.room + '. (There are ' + payload.count + ' users in this room).</p>';
+	let newHTML = '<p class=\'join_room_response\'>' + payload.username + ' joined the chat room. (There are ' + payload.count + ' users in this room).</p>';
 	let newNode = $(newHTML);
 	newNode.hide();
 	$('#messages').prepend(newNode);
@@ -207,7 +207,7 @@ socket.on('player_disconnected', (payload) =>{
 	let domElements = $('.socket_' + payload.socket_id);
 	if(domElements.length !== 0) {domElements.hide("fade", 500);}
 
-	let newHTML = '<p class=\'left_room_response\'>' + payload.username + ' left the ' + payload.room + '. (There are ' + payload.count + ' users in this room).</p>';
+	let newHTML = '<p class=\'left_room_response\'>' + payload.username + ' left the chat room. (There are ' + payload.count + ' users in this room).</p>';
 	let newNode = $(newHTML);
 	newNode.hide();
 	$('#messages').prepend(newNode);
@@ -243,6 +243,130 @@ socket.on('send_chat_message_response', (payload) =>{
 	newNode.show("fade", 500);
 })
 
+
+/*******************GAME STATE*****************************/
+
+let old_board = [
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?'],
+		['?','?','?','?','?','?','?','?']
+	];
+
+
+let my_color = "";
+
+
+socket.on('game_update', (payload) =>{
+	if((typeof payload == 'undefined') || (payload === null)) {
+		console.log('Server did not send a payload');
+		return;
+	}
+	if(payload.result === 'fail') {
+		console.log(payload.message);
+		return;
+	}
+
+	let board = payload.game.board;
+	if((typeof board == 'undefined') || (board === null)) {
+		console.log('Server did not send a valid board to display');
+		return;
+	}
+
+	/*update color*/
+	if (socket.id === payload.game.player_white.socket) {
+		my_color = "white";
+	}
+
+	else if (socket.id === payload.game.player_black.socket) {
+		my_color = "black";
+	}
+
+	else {
+		window.location.href = "lobby.html?username=" + username;
+		return;
+	}
+
+	$("#my_color").html('<h3 id = "my_color"> I am ' + my_color + '</h3>');
+
+
+	/*animate changes to the board*/
+	for (let row = 0; row < 8; row++) {
+		for (let column = 0; column < 8; column++) {
+			/*check to see if server changed any spaces on the board*/
+			if(old_board[row][column] !== board[row][column]) {
+				let graphic = "";
+				let altTag = "";
+				if((old_board[row][column] === '?') && (board[row][column] === ' ')) {
+					graphic = "empty.gif";
+					altTag = "empty space";
+				} 
+
+				else if ((old_board[row][column] === '?') && (board[row][column] === 'w')) {
+					graphic = "empty_to_light.gif";
+					altTag = "white token";
+				}
+
+				else if ((old_board[row][column] === '?') && (board[row][column] === 'b')) {
+					graphic = "empty_to_dark.gif";
+					altTag = "black token";
+				}
+
+				else if ((old_board[row][column] === ' ') && (board[row][column] === 'w')) {
+					graphic = "empty_to_light.gif";
+					altTag = "white token";
+				}
+
+				else if ((old_board[row][column] === ' ') && (board[row][column] === 'b')) {
+					graphic = "empty_to_dark.gif";
+					altTag = "black token";
+				}
+
+				else if ((old_board[row][column] === 'w') && (board[row][column] === ' ')) {
+					graphic = "light_to_empty.gif";
+					altTag = "empty space";
+				}
+
+				else if ((old_board[row][column] === 'b') && (board[row][column] === ' ')) {
+					graphic = "dark_to_empty.gif";
+					altTag = "empty space";
+				}
+
+				else if ((old_board[row][column] === 'w') && (board[row][column] === 'b')) {
+					graphic = "light_to_dark.gif";
+					altTag = "black token";
+				}
+
+				else if ((old_board[row][column] === 'b') && (board[row][column] === 'w')) {
+					graphic = "dark_to_light.gif";
+					altTag = "white token";
+				}
+
+				else {
+					graphic = "error.gif";
+					altTag = "error";
+				}
+
+				const t = Date.now();
+				$('#'+ row + '_' + column).html('<img class="img-fluid" src="assets/images/' + graphic + '?time='+ t + '" alt="' + altTag + '" />');
+
+				$('#' + row + '_' + column).off('click');
+				if (board[row][column] === ' ') {
+					console.log(row + "_" + column +  " Hovered")
+					$('td#' + row + '_' + column).addClass('hovered_over');
+
+				}
+
+			}
+		}	
+	}
+
+	old_board = board;
+})
 
 /************************************************/
 
