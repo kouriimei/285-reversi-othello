@@ -247,18 +247,19 @@ socket.on('send_chat_message_response', (payload) =>{
 /*******************GAME STATE*****************************/
 
 let old_board = [
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?'],
-		['?','?','?','?','?','?','?','?']
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' '],
+		[' ',' ',' ',' ',' ',' ',' ',' ']
 	];
 
 
 let my_color = "";
+let interval_timer;
 
 
 socket.on('game_update', (payload) =>{
@@ -291,7 +292,35 @@ socket.on('game_update', (payload) =>{
 		return;
 	}
 
-	$("#my_color").html('<h3 id = "my_color"> I am ' + my_color + '</h3>');
+/********************enforcing turns***************/
+
+	if(my_color === "Light") {
+		$("#my_color").html('<h3 id = "my_color">I am Light</h3>');
+	}
+
+	else if(my_color === "Dark") {
+		$("#my_color").html('<h3 id = "my_color">I am Dark</h3>');
+	}
+
+	else {
+		$("#my_color").html('<h3 id = "my_color">Error: I don\'t know what color I am</h3>');
+	}
+
+	if(payload.game.whose_turn === "Light") {
+		$("#my_color").append('<h4>It is Light\'s turn</h4>');
+	}
+
+	else if(payload.game.whose_turn === "Dark") {
+		$("#my_color").append('<h4>It is Dark\'s turn</h4>');
+	}
+
+	else {
+		$("#my_color").append('<h4>Error: Don\'t know who\'s turn it is</h4>');
+	}
+
+
+	
+
 
 
 	let whitesum = 0;
@@ -300,9 +329,8 @@ socket.on('game_update', (payload) =>{
 	/*animate changes to the board*/
 	for (let row = 0; row < 8; row++) {
 		for (let column = 0; column < 8; column++) {
-			if (board[row][column] === 'w') {whitesum++;}
-			else if (board[row][column] === 'b') {blacksum++;}
-
+			if (board[row][column] === "L") {whitesum++;}
+			else if (board[row][column] === "D") {blacksum++;}
 			/*check to see if server changed any spaces on the board*/
 			if(old_board[row][column] !== board[row][column]) {
 				let graphic = "";
@@ -312,42 +340,42 @@ socket.on('game_update', (payload) =>{
 					altTag = "empty space";
 				} 
 
-				else if ((old_board[row][column] === '?') && (board[row][column] === 'w')) {
+				else if ((old_board[row][column] === '?') && (board[row][column] === "L")) {
 					graphic = "empty_to_light.gif";
 					altTag = "white token";
 				}
 
-				else if ((old_board[row][column] === '?') && (board[row][column] === 'b')) {
+				else if ((old_board[row][column] === '?') && (board[row][column] === "D")) {
 					graphic = "empty_to_dark.gif";
 					altTag = "black token";
 				}
 
-				else if ((old_board[row][column] === ' ') && (board[row][column] === 'w')) {
+				else if ((old_board[row][column] === ' ') && (board[row][column] === "L")) {
 					graphic = "empty_to_light.gif";
 					altTag = "white token";
 				}
 
-				else if ((old_board[row][column] === ' ') && (board[row][column] === 'b')) {
+				else if ((old_board[row][column] === ' ') && (board[row][column] === "D")) {
 					graphic = "empty_to_dark.gif";
 					altTag = "black token";
 				}
 
-				else if ((old_board[row][column] === 'w') && (board[row][column] === ' ')) {
+				else if ((old_board[row][column] === "L") && (board[row][column] === ' ')) {
 					graphic = "light_to_empty.gif";
 					altTag = "empty space";
 				}
 
-				else if ((old_board[row][column] === 'b') && (board[row][column] === ' ')) {
+				else if ((old_board[row][column] === "D") && (board[row][column] === ' ')) {
 					graphic = "dark_to_empty.gif";
 					altTag = "empty space";
 				}
 
-				else if ((old_board[row][column] === 'w') && (board[row][column] === 'b')) {
+				else if ((old_board[row][column] === "L") && (board[row][column] === "D")) {
 					graphic = "light_to_dark.gif";
 					altTag = "black token";
 				}
 
-				else if ((old_board[row][column] === 'b') && (board[row][column] === 'w')) {
+				else if ((old_board[row][column] === "D") && (board[row][column] === "L")) {
 					graphic = "dark_to_light.gif";
 					altTag = "white token";
 				}
@@ -359,9 +387,13 @@ socket.on('game_update', (payload) =>{
 
 				const t = Date.now();
 				$('#'+ row + '_' + column).html('<img class="img-fluid" src="assets/images/' + graphic + '?time='+ t + '" alt="' + altTag + '" />');
+			}
 
+				//set up interactivity here	
 				$('#' + row + '_' + column).off('click');
-				if (board[row][column] === ' ') {
+				$('#' + row + '_' + column).removeClass('hovered_over');
+				if(payload.game.whose_turn === my_color) {
+					if(payload.game.legal_moves[row][column] === my_color.substr(0,1)) { 
 					$('#' + row + '_' + column).addClass('hovered_over');
 					$('#' + row + '_' + column).click(((r,c) => {
 						return (() => {
@@ -375,12 +407,37 @@ socket.on('game_update', (payload) =>{
 						});
 						})(row, column));
 					}
-					else {
-						$('#' + row + '_' + column).removeClass('hovered_over');
-					}
 				}
 			}
 		}
+
+		clearInterval(interval_timer);
+		interval_timer = setInterval( ((last_time) => {
+			return ( () => {
+				let d = new Date();
+				let elapsed_m = d.getTime() - last_time;
+				let minutes = Math.floor(((elapsed_m/1000)/60));
+				let seconds = Math.floor((elapsed_m % (60*1000))/1000);
+				let total = minutes * 60 + seconds;
+
+				if (total > 100) {total=100;}
+
+				$("#elapsed").css("width", total + "%").attr("aria-valuenow", total);
+				let timestring = "" + seconds; 
+				timestring = timestring.padStart(2, '0');
+				timestring = minutes + ":" + timestring;
+
+				if (total < 100) {$("#elapsed").html(timestring);}
+				else {$("#elapsed").html("Time's up!");}
+			})
+
+		}) (payload.game.last_move_time)
+			, 1000);
+
+
+
+
+
 
 	$("#lightsum").html(whitesum);
 	$("#darksum").html(blacksum);
@@ -394,6 +451,7 @@ socket.on('play_token_response', (payload) =>{
 	}
 	if(payload.result === 'fail') {
 		console.log(payload.message);
+		alert(payload.message);
 		return;
 	}
 })

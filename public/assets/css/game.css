@@ -75,3 +75,11 @@
         background-size: 100% 100%;
         overflow: visible;
       }
+
+     
+    #elapsed{
+      background-color:  #d5c3c4 !important;
+      border:  3px solid floralwhite;
+      margin:  0px;
+      padding:  0px;  
+    }
